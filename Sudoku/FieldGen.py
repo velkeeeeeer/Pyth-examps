@@ -6,11 +6,11 @@ import os
 import re
 from pathlib import Path
 
-def create_field() -> NDArray[np.int64]:
-        field = np.zeros((9,9), dtype=int)
+def create_field() -> NDArray[np.uint8]:
+        field = np.zeros((9,9), dtype=np.uint8)
         return field
 
-def is_valid(field: NDArray[np.int64], number: int, row: int, col: int) -> bool:
+def is_valid(field: NDArray[np.uint8], number: int, row: int, col: int) -> bool:
     """Правила заполнения игрового поля"""
     for cl in range(9):
         if field[row][cl] == number:
@@ -27,7 +27,7 @@ def is_valid(field: NDArray[np.int64], number: int, row: int, col: int) -> bool:
                 return False
     return True
 
-def fill_field_by_backtrack(field: NDArray[np.int64]):
+def fill_field_by_backtrack(field: NDArray[np.uint8]):
     """Заполнение поля по правилам судоку игрового поля"""
     for row in range(0, 9):
         for col in range(0, 9):
@@ -43,7 +43,7 @@ def fill_field_by_backtrack(field: NDArray[np.int64]):
                 return False
     return True
 
-def solutions_counter_by_backtrack(field: NDArray[np.int64], cnter: list[int]) -> None:
+def solutions_counter_by_backtrack(field: NDArray[np.uint8], cnter: list[int]) -> None:
     if cnter[0] >= 2:
         return
     for row in range(0, 9):
@@ -60,29 +60,34 @@ def solutions_counter_by_backtrack(field: NDArray[np.int64], cnter: list[int]) -
                 return
     cnter[0] += 1
 
-def mask_random_cells(field: NDArray[np.int64]) -> None:
-    HIDE_CELLS: int = 52
+
+#TODO Обновить алгоритм закрашивания клеток с проверкой на единственное решение.
+#TODO Добавить уровни сложности игры.
+def mask_random_cells(field: NDArray[np.uint8], HIDE_CELLS: int = 52) -> None:
     coords: list[tuple[int, int]] = [(i, k) for i in range(9) for k in range(9)]
     random.shuffle(coords)
     for x, y in coords[:HIDE_CELLS]:
         field[x,y] = 0
 
-def get_field_mask(field: NDArray[np.int64]) -> NDArray[np.bool_]:
+
+def get_field_mask(field: NDArray[np.uint8]) -> NDArray[np.bool_]:
     mask: NDArray[np.bool_] = field > 0
     return mask
 
-def has_unique_solutions(field: NDArray[np.int64]) -> bool:
+
+def has_unique_solutions(field: NDArray[np.uint8]) -> bool:
     """Проверка количества решений у поля с замасированными ячейками"""
     new_field = deepcopy(field)
     counter: list[int] = [0]
     solutions_counter_by_backtrack(new_field, counter)
     return counter[0] == 1
 
-def create_field_and_mask() -> tuple[NDArray[np.int64], NDArray[np.bool_]]:
+# TODO Протащить код выбора уровня до маскировщика полей
+def create_field_and_mask() -> tuple[NDArray[np.uint8], NDArray[np.bool_]]:
     """Функция создания игрового поля Судоку, возвращает кортеж из игрового поля и маски данного поля"""
-    field: NDArray[np.int64] = create_field()
+    field: NDArray[np.uint8] = create_field()
     fill_field_by_backtrack(field)
-    field_with_masked_cells: NDArray[np.int64]
+    field_with_masked_cells: NDArray[np.uint8]
     field_mask: NDArray[np.bool_]
     while True:
         field_with_masked_cells = deepcopy(field)
@@ -92,7 +97,7 @@ def create_field_and_mask() -> tuple[NDArray[np.int64], NDArray[np.bool_]]:
             break
     return field, field_mask
 
-def from_data_to_file(field: NDArray[np.int64], field_mask: NDArray[np.bool_], filepath: str = os.getcwd() + "\\Sudoku\\Fields\\") -> None:
+def from_data_to_file(field: NDArray[np.uint8], field_mask: NDArray[np.bool_], filepath: str = os.getcwd() + "\\Sudoku\\Fields\\") -> None:
     Path(filepath).mkdir(parents=True, exist_ok=True)
     idx = []
     levels = os.listdir(filepath)
@@ -108,8 +113,6 @@ def from_data_to_file(field: NDArray[np.int64], field_mask: NDArray[np.bool_], f
     print("Уровень успешно сохранен!")
     return
 
-def displayField(field: NDArray[np.int64] | NDArray[np.bool_]) -> None:
+def displayField(field: NDArray[np.uint8] | NDArray[np.bool_]) -> None:
         """Отображение поля"""
         print(field)
-
-from_data_to_file(*create_field_and_mask())
