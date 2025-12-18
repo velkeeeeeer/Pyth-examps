@@ -63,7 +63,7 @@ def solutions_counter_by_backtrack(field: NDArray[np.uint8], cnter: list[int]) -
 
 #TODO Обновить алгоритм закрашивания клеток с проверкой на единственное решение.
 #TODO Добавить уровни сложности игры.
-def mask_random_cells(field: NDArray[np.uint8], HIDE_CELLS: int = 52) -> None:
+def mask_random_cells(field: NDArray[np.uint8], HIDE_CELLS: int = 3) -> None:
     coords: list[tuple[int, int]] = [(i, k) for i in range(9) for k in range(9)]
     random.shuffle(coords)
     for x, y in coords[:HIDE_CELLS]:
@@ -116,3 +116,5 @@ def from_data_to_file(field: NDArray[np.uint8], field_mask: NDArray[np.bool_], f
 def displayField(field: NDArray[np.uint8] | NDArray[np.bool_]) -> None:
         """Отображение поля"""
         print(field)
+
+#from_data_to_file(*create_field_and_mask())

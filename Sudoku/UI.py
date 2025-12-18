@@ -23,7 +23,7 @@ def main(page: ft.Page):
     def main_view():
         new_game_button = ft.FilledButton(text="Новая игра",
                                       color=ft.Colors.WHITE,
-                                      on_click=lambda _: page.go("/loading"), #TODO Добавить загрузочный экран
+                                      on_click=lambda _: page.go("/loading"),
                                       width=150,
                                       height=90,
                                       )
@@ -32,7 +32,7 @@ def main(page: ft.Page):
                                       on_click=lambda _: page.go("/game"),
                                       width=150,
                                       height=90,
-                                      disabled=True if not game.get_display_answer().any() else False
+                                      disabled=not game.get_game_state()
                                       )
         
         header_text = ft.Text(value="Sudoku",
@@ -69,14 +69,14 @@ def main(page: ft.Page):
         view.controls.append(progress)
         def load_game_data():
             time.sleep(3)
-            game.set_field_mask(np.load("C:\\Users\\Pobeda\\Desktop\\Pyth examps\\Sudoku\\Fields\\Level 1\\field.npy"), np.load("C:\\Users\\Pobeda\\Desktop\\Pyth examps\\Sudoku\\Fields\\Level 1\\mask.npy"))
+            game.set_field_mask(np.load("C:\\Users\\Pobeda\\Desktop\\Pyth examps\\Sudoku\\Fields\\Level 2\\field.npy"), np.load("C:\\Users\\Pobeda\\Desktop\\Pyth examps\\Sudoku\\Fields\\Level 2\\mask.npy"))
             game.set_current_field()
             page.go("/game")
         threading.Thread(target=load_game_data, daemon=True).start()
         return(view)
 
 
-    def game_view():
+    def game_view():        
         rows = []
         for row in range(9):
             cells = []
@@ -137,6 +137,25 @@ def main(page: ft.Page):
             route="/game",
         )
         return view
+    def show_win_snack():
+        def out():
+            game.complete_game()
+            page.go("/")
+
+        snack = ft.SnackBar(
+                content=ft.Text(value="Победа!", size=40),
+                open = True,
+                duration=10000,
+                action="Выйти и отчистить поле",
+                on_action=lambda _:out()
+                )
+        page.overlay.append(snack)
+        page.update()
+
+    def is_full():
+            if np.array_equal(game.current_field, game.get_display_answer()):
+                show_win_snack()
+
     def select_cell(row, col):
         if not game.get_mask_value(row, col):
             game.selected_cell = [row, col]
@@ -147,12 +166,17 @@ def main(page: ft.Page):
             row, col = game.selected_cell
             if row != None and col != None and not game.get_mask_value(row, col):
                 game.current_field[row, col] = text
-                
+                is_full()
                 route_change(None)
+
+
+        
+
     def route_change(route):
         page.views.clear()
-        page.views.append(main_view())
-        if page.route == "/game":
+        if page.route == "/":
+            page.views.append(main_view())
+        elif page.route == "/game":
             page.views.append(game_view())
         elif page.route == "/loading":
             page.views.append(loading_view())
