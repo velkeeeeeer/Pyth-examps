@@ -1,10 +1,14 @@
 from copy import deepcopy
 import numpy as np
 from numpy.typing import NDArray
-from classField import SudokuField
 import random
+import os
+import re
+from pathlib import Path
 
-
+def create_field() -> NDArray[np.int64]:
+        field = np.zeros((9,9), dtype=int)
+        return field
 
 def is_valid(field: NDArray[np.int64], number: int, row: int, col: int) -> bool:
     """Правила заполнения игрового поля"""
@@ -27,7 +31,7 @@ def fill_field_by_backtrack(field: NDArray[np.int64]):
     """Заполнение поля по правилам судоку игрового поля"""
     for row in range(0, 9):
         for col in range(0, 9):
-            if field[row][col] == 0:
+            if field[row, col] == 0:
                 numbers: list = list(range(1, 10))
                 random.shuffle(numbers)
                 for num in numbers:
@@ -49,17 +53,15 @@ def solutions_counter_by_backtrack(field: NDArray[np.int64], cnter: list[int]) -
                 for num in numbers:
                     if is_valid(field, num, row, col):
                         field[row, col] = num
-                        solutions_counter_by_backtrack(field, cnter)
+                        solutions_counter_by_backtrack(deepcopy(field), cnter)
+                        field[row, col] = 0
                         if cnter[0] >= 2:
                             return
-                        field[row, col] = 0
-
-    if not np.any(field == 0):
-        cnter[0] += 1
-    return
+                return
+    cnter[0] += 1
 
 def mask_random_cells(field: NDArray[np.int64]) -> None:
-    HIDE_CELLS: int = 65
+    HIDE_CELLS: int = 52
     coords: list[tuple[int, int]] = [(i, k) for i in range(9) for k in range(9)]
     random.shuffle(coords)
     for x, y in coords[:HIDE_CELLS]:
@@ -78,7 +80,7 @@ def has_unique_solutions(field: NDArray[np.int64]) -> bool:
 
 def create_field_and_mask() -> tuple[NDArray[np.int64], NDArray[np.bool_]]:
     """Функция создания игрового поля Судоку, возвращает кортеж из игрового поля и маски данного поля"""
-    field: NDArray[np.int64] = SudokuField.create_field()
+    field: NDArray[np.int64] = create_field()
     fill_field_by_backtrack(field)
     field_with_masked_cells: NDArray[np.int64]
     field_mask: NDArray[np.bool_]
@@ -87,6 +89,27 @@ def create_field_and_mask() -> tuple[NDArray[np.int64], NDArray[np.bool_]]:
         mask_random_cells(field_with_masked_cells)
         field_mask = get_field_mask(field_with_masked_cells)
         if has_unique_solutions(field_with_masked_cells):
-            field = field_with_masked_cells
             break
     return field, field_mask
+
+def from_data_to_file(field: NDArray[np.int64], field_mask: NDArray[np.bool_], filepath: str = os.getcwd() + "\\Sudoku\\Fields\\") -> None:
+    Path(filepath).mkdir(parents=True, exist_ok=True)
+    idx = []
+    levels = os.listdir(filepath)
+    for level in levels:
+        match = re.match(r"Level\s(\d+)", level)
+        if match:
+            idx.append(int(match.group(1)))
+    nxt_level = max(idx) + 1 if levels else 1
+    new_dir = os.path.join(filepath, filepath + f"Level {nxt_level}")
+    os.mkdir(new_dir)
+    np.save(os.path.join(new_dir, "field.npy"), field)
+    np.save(os.path.join(new_dir, "mask.npy"), field_mask)
+    print("Уровень успешно сохранен!")
+    return
+
+def displayField(field: NDArray[np.int64] | NDArray[np.bool_]) -> None:
+        """Отображение поля"""
+        print(field)
+
+from_data_to_file(*create_field_and_mask())
