@@ -1,9 +1,6 @@
-from ctypes import alignment
-from fileinput import hook_encoded
 import threading
 from tkinter.tix import TEXT
-from turtle import onclick
-from FieldGen import displayField
+from FieldGen import create_field_and_mask
 import classField
 import flet as ft
 import numpy as np
@@ -19,16 +16,16 @@ def main(page: ft.Page):
     page.window.max_height = 900
     page.window.max_width = 540
     page.window.full_screen = False
+    theme_button_ref = ft.Ref[ft.IconButton]()
     print(page.platform_brightness)
-    def main_view():
+    def main_view() -> ft.View:
         new_game_button = ft.FilledButton(text="Новая игра",
-                                      color=ft.Colors.WHITE,
-                                      on_click=lambda _: page.go("/loading"),
+                                      color=ft.Colors.ON_PRIMARY,
+                                      on_click=lambda _: show_dialog(),
                                       width=150,
                                       height=90,
                                       )
         continue_game_button = ft.FilledButton(text="Продолжить",
-                                      color=ft.Colors.WHITE,
                                       on_click=lambda _: page.go("/game"),
                                       width=150,
                                       height=90,
@@ -36,13 +33,11 @@ def main(page: ft.Page):
                                       )
         
         header_text = ft.Text(value="Sudoku",
-                              color=ft.Colors.WHITE if page.platform_brightness == ft.Brightness.DARK else ft.Colors.BLACK,
+                              color=ft.Colors.ON_SURFACE_VARIANT,
                               size=100,
                               text_align=ft.TextAlign.CENTER)
-
-        view = ft.View(route='/',
-                            controls=[
-                                ft.Column(
+        
+        play_panel = ft.Column(
                                     controls=[
                                         ft.Container(content=header_text,
                                                      alignment=ft.alignment.center,
@@ -56,27 +51,93 @@ def main(page: ft.Page):
                                     ],
                                 expand=True,
                                 alignment=ft.MainAxisAlignment.CENTER,
-                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,              
-                                ),
+                                horizontal_alignment=ft.CrossAxisAlignment.START,              
+                                )
+        
+
+        
+        change_theme_button = ft.IconButton(
+                                            ref=theme_button_ref,
+                                            icon=ft.Icons.SUNNY if get_actual_theme() == ft.ThemeMode.DARK else ft.Icons.NIGHTLIGHT,
+                                            alignment=ft.alignment.top_right,
+                                            on_click=lambda _: change_theme() 
+                                             )
+
+
+
+        control_panel = ft.Stack(controls=[ft.Container(content=change_theme_button,
+                                                      alignment=ft.alignment.top_right)],
+                               
+                               alignment=ft.alignment.top_center)
+
+
+
+        view = ft.View(route='/',
+                            controls=[
+                                control_panel,
+                                play_panel,
                             ],
                        )
+        
+        def show_dialog():
+            dlg = ft.AlertDialog(
+                                 content=ft.Text("Выбор сложности"),
+                                 actions=[
+                                    ft.TextButton(text="Лёгкая",
+                                                on_click=lambda _: set_diff_go(0)),
+                                    ft.TextButton(text="Средняя",
+                                                on_click=lambda _: set_diff_go(1)),
+                                    ft.TextButton(text="Сложная",
+                                                on_click=lambda _: set_diff_go(2))
+                                 ],
+                                 actions_alignment=ft.MainAxisAlignment.CENTER
+                                 )
+            page.overlay.append(dlg)
+            dlg.open = True
+            page.update()
         return view
 
-    def loading_view():
+    def close_dlg():
+        for dlg in page.overlay:
+            if isinstance(dlg, ft.AlertDialog):
+                dlg.open = False
+        page.update()
+
+    def set_diff_go(diff: int):
+        game.set_difficult(diff)
+        page.go("/loading")
+
+    def get_actual_theme():
+        if page.theme_mode == ft.ThemeMode.SYSTEM:
+            return ft.ThemeMode.DARK if page.platform_brightness == ft.Brightness.DARK else ft.ThemeMode.LIGHT
+        return page.theme_mode
+
+
+    def change_theme():
+        if page.theme_mode == ft.ThemeMode.DARK:
+            page.theme_mode = ft.ThemeMode.LIGHT
+            theme_button_ref.current.icon = ft.Icons.NIGHTLIGHT
+        else:
+            page.theme_mode = ft.ThemeMode.DARK
+            theme_button_ref.current.icon = ft.Icons.SUNNY
+        page.update()
+
+
+
+    def loading_view() -> ft.View:
         view = ft.View(route="/loading")
         progress = ft.ProgressBar(width=400, color=ft.Colors.AMBER)
         view.controls.append(ft.Text("Загрузка...", size=30))
         view.controls.append(progress)
         def load_game_data():
-            time.sleep(3)
-            game.set_field_mask(np.load("C:\\Users\\Pobeda\\Desktop\\Pyth examps\\Sudoku\\Fields\\Level 2\\field.npy"), np.load("C:\\Users\\Pobeda\\Desktop\\Pyth examps\\Sudoku\\Fields\\Level 2\\mask.npy"))
+            time.sleep(1)
+            game.set_field_mask(*create_field_and_mask(game.get_difficult()))
             game.set_current_field()
             page.go("/game")
         threading.Thread(target=load_game_data, daemon=True).start()
         return(view)
 
-
-    def game_view():        
+    def game_view() -> ft.View:        
         rows = []
         for row in range(9):
             cells = []
@@ -111,7 +172,9 @@ def main(page: ft.Page):
         num_board = ft.Column(keyboard_rows, spacing=1,)
 
         exit_button = ft.IconButton(icon=ft.Icons.EXIT_TO_APP,
-                                on_click=lambda _: page.go("/"))
+                                    on_click=lambda _: page.go("/"),
+                                    width=50,
+                                    height=50,)
 
         view = ft.View(
             controls=[
@@ -126,10 +189,13 @@ def main(page: ft.Page):
                                 
                         ),
                         ft.Container(content=exit_button,
-                                     alignment=ft.alignment.top_right)
+                                     width=540,
+                                     height=100,
+                                     alignment=ft.alignment.bottom_right
+                                     )
                     ],
                     expand = True,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.START,
                     alignment=ft.MainAxisAlignment.CENTER,
                     spacing=30,
                     ), 
@@ -168,9 +234,7 @@ def main(page: ft.Page):
                 game.current_field[row, col] = text
                 is_full()
                 route_change(None)
-
-
-        
+       
 
     def route_change(route):
         page.views.clear()

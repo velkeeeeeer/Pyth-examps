@@ -63,10 +63,10 @@ def solutions_counter_by_backtrack(field: NDArray[np.uint8], cnter: list[int]) -
 
 #TODO Обновить алгоритм закрашивания клеток с проверкой на единственное решение.
 #TODO Добавить уровни сложности игры.
-def mask_random_cells(field: NDArray[np.uint8], HIDE_CELLS: int = 3) -> None:
+def mask_random_cells(field: NDArray[np.uint8], difficult: int, HIDE_CELLS: list[int] = [26, 38, 52]) -> None:
     coords: list[tuple[int, int]] = [(i, k) for i in range(9) for k in range(9)]
     random.shuffle(coords)
-    for x, y in coords[:HIDE_CELLS]:
+    for x, y in coords[:HIDE_CELLS[difficult]]:
         field[x,y] = 0
 
 
@@ -83,7 +83,7 @@ def has_unique_solutions(field: NDArray[np.uint8]) -> bool:
     return counter[0] == 1
 
 # TODO Протащить код выбора уровня до маскировщика полей
-def create_field_and_mask() -> tuple[NDArray[np.uint8], NDArray[np.bool_]]:
+def create_field_and_mask(difficult: int) -> tuple[NDArray[np.uint8], NDArray[np.bool_]]:
     """Функция создания игрового поля Судоку, возвращает кортеж из игрового поля и маски данного поля"""
     field: NDArray[np.uint8] = create_field()
     fill_field_by_backtrack(field)
@@ -91,13 +91,13 @@ def create_field_and_mask() -> tuple[NDArray[np.uint8], NDArray[np.bool_]]:
     field_mask: NDArray[np.bool_]
     while True:
         field_with_masked_cells = deepcopy(field)
-        mask_random_cells(field_with_masked_cells)
+        mask_random_cells(field_with_masked_cells, difficult=difficult)
         field_mask = get_field_mask(field_with_masked_cells)
         if has_unique_solutions(field_with_masked_cells):
             break
     return field, field_mask
 
-def from_data_to_file(field: NDArray[np.uint8], field_mask: NDArray[np.bool_], filepath: str = os.getcwd() + "\\Sudoku\\Fields\\") -> None:
+"""def from_data_to_file(field: NDArray[np.uint8], field_mask: NDArray[np.bool_], filepath: str = os.getcwd() + "\\Sudoku\\Fields\\") -> None:
     Path(filepath).mkdir(parents=True, exist_ok=True)
     idx = []
     levels = os.listdir(filepath)
@@ -111,7 +111,7 @@ def from_data_to_file(field: NDArray[np.uint8], field_mask: NDArray[np.bool_], f
     np.save(os.path.join(new_dir, "field.npy"), field)
     np.save(os.path.join(new_dir, "mask.npy"), field_mask)
     print("Уровень успешно сохранен!")
-    return
+    return"""
 
 def displayField(field: NDArray[np.uint8] | NDArray[np.bool_]) -> None:
         """Отображение поля"""

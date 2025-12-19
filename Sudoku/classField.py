@@ -11,6 +11,7 @@ class SudokuGame:
         self.current_field: NDArray[np.uint8] = np.zeros((9,9), dtype=np.uint8)
         self.selected_cell: list[None] | list[int] = [None, None]
         self.__is_active: bool = False
+        self.__difficult: int = 0
     def set_field_mask(self, field: NDArray[np.uint8], mask: NDArray[np.bool_]):
         self.__field = field
         self.__mask = mask
@@ -31,3 +32,8 @@ class SudokuGame:
         return self.__mask[row, col]
     def get_game_state(self):
         return self.__is_active
+    def set_difficult(self, difficult: int):
+        if 0 <= difficult < 3:
+            self.__difficult = difficult
+    def get_difficult(self):
+        return self.__difficult
