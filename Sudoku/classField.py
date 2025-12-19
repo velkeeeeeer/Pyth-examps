@@ -28,6 +28,8 @@ class SudokuGame:
         return bool(self.current_field.any())
     def complete_game(self):
         self.__is_active = False
+        self.selected_cell = [None, None]
+
     def get_mask_value(self, row: int, col: int):
         return self.__mask[row, col]
     def get_game_state(self):

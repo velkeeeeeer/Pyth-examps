@@ -1,3 +1,4 @@
+from ctypes import alignment
 import threading
 from tkinter.tix import TEXT
 from FieldGen import create_field_and_mask
@@ -97,12 +98,6 @@ def main(page: ft.Page):
             page.update()
         return view
 
-    def close_dlg():
-        for dlg in page.overlay:
-            if isinstance(dlg, ft.AlertDialog):
-                dlg.open = False
-        page.update()
-
     def set_diff_go(diff: int):
         game.set_difficult(diff)
         page.go("/loading")
@@ -123,12 +118,14 @@ def main(page: ft.Page):
         page.update()
 
 
-
     def loading_view() -> ft.View:
-        view = ft.View(route="/loading")
-        progress = ft.ProgressBar(width=400, color=ft.Colors.AMBER)
-        view.controls.append(ft.Text("Загрузка...", size=30))
-        view.controls.append(progress)
+        view = ft.View(route="/loading", controls=[ft.Column(controls=[ft.Text("Загрузка...", size=40),
+                                                                       ft.ProgressBar(width=400, color=ft.Colors.AMBER)],
+                                                            alignment=ft.MainAxisAlignment.CENTER,
+                                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER          
+                                                                       )],
+                        vertical_alignment=ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         def load_game_data():
             time.sleep(1)
             game.set_field_mask(*create_field_and_mask(game.get_difficult()))
@@ -162,8 +159,8 @@ def main(page: ft.Page):
             num_buttons.append(ft.ElevatedButton(
                 text = str(i),
                 on_click=lambda e, val = i: fill_cell(np.uint8(val)),
-                width=50,
-                height=50
+                width=70,
+                height=70
             ))
         keyboard_rows = [ft.Row(num_buttons[0:3], spacing=1, alignment=ft.MainAxisAlignment.CENTER),
                          ft.Row(num_buttons[3:6], spacing=1, alignment=ft.MainAxisAlignment.CENTER),
@@ -173,8 +170,8 @@ def main(page: ft.Page):
 
         exit_button = ft.IconButton(icon=ft.Icons.EXIT_TO_APP,
                                     on_click=lambda _: page.go("/"),
-                                    width=50,
-                                    height=50,)
+                                    width=70,
+                                    height=70,)
 
         view = ft.View(
             controls=[
